@@ -8,6 +8,7 @@
 | Phase 0–1: config, `poll.py`, `demo_db.py`, `index.html`, workflow, README | Done; tested locally with the demo DB (poll ×2 → 2 history points, 4 cards rendered in headless Chrome) |
 | `dashboard.yml` workflow | YAML is valid, **not yet run on GitHub** |
 | postgres / mssql connection | Present in code, **untested** |
+| Order drill-down (trend point → list → order + customer) | Done on branch `feature/order-drilldown`; tested locally with `scripts/smoke_test.py` and headless Chrome |
 | Git | Project files are **not committed yet** (only `.gitattributes` is tracked); remote `origin` exists |
 
 ## 2. Moving to Claude Code (one-time)
@@ -55,6 +56,7 @@ python -m http.server -d docs 8000
 - Acceptance: the dashboard opens at the Pages URL; after 15 minutes the scheduled run has made `history` in `docs/data/dashboard.json` one point longer and updated `generated_at`.
 
 ### Phase 3 — Connect to the company database
+0. **Privacy prerequisite:** `detail` pages publish record-level data. Before enabling `detail` on real data, make sure no personal data (names, emails, ...) reaches public Pages: use anonymised/aggregate fields or access-controlled Pages.
 1. Request a **read-only user** for the DB (only the required tables/views).
 2. `config.yml` → `database.type` (`postgres` / `mssql`); enable the matching driver in `requirements.txt` (`psycopg2-binary`, or `pyodbc` + the ODBC driver installed on the runner).
 3. Add the `DB_DSN` secret (e.g. postgres: `host=... dbname=... user=... password=...`).

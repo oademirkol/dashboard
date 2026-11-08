@@ -22,6 +22,7 @@ All PoC files are written and were **tested locally with the demo SQLite DB** (p
 4 cards + 2 charts render without errors in headless Chrome).
 - [x] `config.yml`, `scripts/poll.py`, `scripts/demo_db.py`, `docs/index.html`, `requirements.txt`, `README.md`, `.gitignore`
 - [x] `.github/workflows/dashboard.yml` — valid YAML, **not yet run on GitHub**
+- [x] Order drill-down: trend point → order list → order detail, and Latest orders row → order detail (`specs/`, `plans/`, `scripts/smoke_test.py`)
 - [ ] Real DB (postgres/mssql) connection — present in code, **untested**
 - [ ] Next: `MIGRATION.md` Phase 2 (move to GitHub), then Phase 3 (company DB)
 - [ ] Project files are not committed yet (only `.gitattributes` is tracked)
@@ -39,6 +40,19 @@ for real metrics use series on the same scale or split them into separate cards.
    "updated": "ISO-UTC|null", "error": null}]}
 ```
 `history` exists only on `mode: append` metrics. If `error` is set, the last successful data is shown.
+Optional `"detail"` on a metric: `{"key": "<column>"}` (table metrics: that column's cells link to detail pages) or
+`{"list": true}` (line metrics: history points are clickable).
+
+## Drill-down files (produced by poll.py, read by detail.html)
+`docs/data/details/<metric>/<key>.json`, opt-in via a `detail` block in `config.yml` (see the `latest_orders` and
+`orders_trend` examples; design in `specs/2026-11-08-order-drilldown-design.md`).
+- Record file: `{"metric","key","title","sections":[{"title","columns","row","error"}]}`.
+- List file (one per retained history point, key = `ts_key(ts)`, e.g. `20261108T185000Z`):
+  `{"metric","key","title","list":{"columns","rows","link":{"metric","key"},"error"}}`.
+- Keys and metric names must match `^[A-Za-z0-9_-]+$` (they become file names). Files carry no timestamps and are
+  rewritten only when content changes; files of keys no longer referenced are deleted.
+- `detail.html` validates `metric`/`key` with the same regex and renders only via `textContent`.
+- `scripts/smoke_test.py` (stdlib `unittest`) covers this and runs in the workflow before polling.
 
 ## index.html requirements
 - Single file, vanilla JS, Chart.js (jsdelivr CDN; show a warning in the card if the CDN fails to load).
@@ -66,6 +80,7 @@ for real metrics use series on the same scale or split them into separate cards.
 - No secrets in the repo: connection info only via the `DB_DSN` secret.
 - Never write DB error text into the public JSON (poll.py already writes a generic message; details go to the Actions log).
 - Pages output may be public: fetch only summary/aggregate data, never raw records.
+- Privacy: the demo `customers` data is fake. Never point `detail` at real personal data (names, emails) on public Pages — use anonymised/aggregate fields or access-controlled Pages.
 - Do not add new dependencies (other than pyyaml) — keep the PoC simple. For a new DB type add an `if` in `poll.py > connect()`.
 
 ## Commands
