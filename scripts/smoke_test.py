@@ -224,7 +224,7 @@ class TrendListTest(DetailCase):
         self.assertEqual(self.metric_out("orders_trend")["detail"], {"list": True})
 
     def test_list_ids_have_order_details(self):
-        self.tick(8)
+        self.tick(15)  # more than the 10 table rows, regardless of the random seed data
         self.assertEqual(self.poll().returncode, 0)
         ids = set()
         for key in self.files("orders_trend"):
