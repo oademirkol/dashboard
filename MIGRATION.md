@@ -53,7 +53,7 @@ python -m http.server -d docs 8000
   - If `main` has branch protection, allow the bot to push `docs/data/dashboard.json` (otherwise the push step fails).
   - The bot commit is pushed with `GITHUB_TOKEN`, so it does not trigger a new workflow run (no loop); the push trigger only watches `config.yml`, `docs/index.html`, `scripts/**` and the workflow file anyway.
 - In demo mode the workflow regenerates the DB from scratch on every run (`--tick` is not called), so the data stays the same, but `history` still gains a new timestamped point per run.
-- Acceptance: the dashboard opens at the Pages URL; after 15 minutes the scheduled run has made `history` in `docs/data/dashboard.json` one point longer and updated `generated_at`.
+- Acceptance: the dashboard opens at the Pages URL; after each manual **Run workflow** (the cron schedule is disabled), `history` in `docs/data/dashboard.json` is one point longer and `generated_at` is updated.
 
 ### Phase 3 — Connect to the company database
 0. **Privacy prerequisite:** `detail` pages publish record-level data. Before enabling `detail` on real data, make sure no personal data (names, emails, ...) reaches public Pages: use anonymised/aggregate fields or access-controlled Pages.
@@ -71,7 +71,7 @@ python -m http.server -d docs 8000
 - **Repo growth:** every poll is a commit. Keep `max_points` low; if it grows, move `dashboard.json` to a separate `data` branch (force-push).
 - **CDN:** if the company network blocks jsdelivr, download Chart.js into `docs/vendor/` and load it locally.
 - **Monitoring:** a failed poll emits a workflow warning (`::warning::` is already there); add notifications if needed.
-- **Cron delay:** the GitHub schedule can drift by a few minutes; showing `generated_at` on the dashboard is enough.
+- **Cron (currently disabled):** re-add a `schedule` trigger to the workflow for automatic polling; the GitHub schedule can drift by a few minutes; showing `generated_at` on the dashboard is enough.
 - **Self-hosted runner security:** do not use a self-hosted runner on a public repo (fork PRs could run code on the company network); run the runner under a dedicated account with minimal privileges.
 - **Secret rotation:** rotate the `DB_DSN` password regularly; the DB user should only have access to the required tables/views.
 - **JSON size:** `dashboard.json` grows with `max_points` × number of metrics; if it exceeds a few MB, move it to the `data` branch.

@@ -3,7 +3,7 @@
 A config-driven dashboard that polls a DB periodically and shows the result on a static page (GitHub Actions + Pages).
 
 ```
-DB → scripts/poll.py (Actions cron) → docs/data/dashboard.json → docs/index.html → Pages
+DB → scripts/poll.py (Actions, manual run) → docs/data/dashboard.json → docs/index.html → Pages
 ```
 
 ## Try it locally

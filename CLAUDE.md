@@ -11,7 +11,7 @@ an existing file that still has Turkish text, translate it.
 
 ## Architecture
 ```
-DB --(self-hosted runner, cron)--> scripts/poll.py --> docs/data/dashboard.json --> docs/index.html (Chart.js) --> Pages
+DB --(self-hosted runner, manual run)--> scripts/poll.py --> docs/data/dashboard.json --> docs/index.html (Chart.js) --> Pages
 ```
 - Single config: `config.yml` (SQL + chart type). Changing SQL/charts requires no code change.
 - History (trend) data lives in the `history` field of `dashboard.json` and is committed to the repo.
@@ -66,7 +66,7 @@ Optional `"detail"` on a metric: `{"key": "<column>"}` (table metrics: that colu
 - Write DB data to the DOM with `textContent` (never innerHTML).
 
 ## Workflow requirements (`dashboard.yml`)
-- Triggers: `schedule` (`*/15 * * * *`), `workflow_dispatch`, `push` (config.yml, docs/index.html, scripts/**).
+- Triggers: `workflow_dispatch` (manual) and `push` (config.yml, docs/index.html, docs/detail.html, scripts/**). The `schedule` cron is disabled on purpose (user runs it manually); re-add `schedule: - cron: "*/15 * * * *"` to poll automatically.
 - `permissions`: contents: write, pages: write, id-token: write. `concurrency: dashboard`, cancel-in-progress: false.
 - Job `build`: `runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}` (`self-hosted` for the company).
   - job env `DB_DSN: ${{ secrets.DB_DSN }}`; if `DB_DSN` is empty run `scripts/demo_db.py` (demo mode).
