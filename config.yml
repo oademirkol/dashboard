@@ -1,0 +1,59 @@
+# Single config file: change SQL and chart type here, no code changes needed.
+title: "PoC Dashboard"
+refresh_seconds: 60            # the browser re-reads the JSON at this interval
+
+database:
+  type: sqlite                 # sqlite | postgres | mssql
+  dsn_env: DB_DSN              # connection info comes from this env variable (GitHub Secret)
+  dsn_default: demo.sqlite     # used when the env variable is unset (demo)
+
+# Metric fields:
+#   name        unique id
+#   title       card title
+#   type        stat | line | bar | table
+#   sql         a single SELECT
+#   mode        snapshot | append   (default: line -> append, others -> snapshot)
+#               append: on every poll the first row of the result is added to the history with a timestamp
+#   max_points  number of points kept in the append history (default 500)
+#   max_rows    maximum rows fetched from the query (default 500)
+#   wide        if true the card spans the full width
+metrics:
+  - name: totals
+    title: Last 24 hours
+    type: stat
+    sql: |
+      SELECT COUNT(*) AS orders,
+             ROUND(SUM(amount), 2) AS revenue,
+             ROUND(AVG(amount), 2) AS avg_order
+      FROM orders
+      WHERE created_at >= datetime('now', '-1 day')
+
+  - name: orders_trend
+    title: Orders in the last hour (poll history)
+    type: line
+    max_points: 300
+    wide: true
+    sql: |
+      SELECT COUNT(*) AS orders_1h,
+             ROUND(AVG(amount), 2) AS avg_amount
+      FROM orders
+      WHERE created_at >= datetime('now', '-1 hour')
+
+  - name: revenue_by_region
+    title: Revenue by region (7 days)
+    type: bar
+    sql: |
+      SELECT region, ROUND(SUM(amount), 2) AS revenue
+      FROM orders
+      WHERE created_at >= datetime('now', '-7 day')
+      GROUP BY region
+      ORDER BY revenue DESC
+
+  - name: latest_orders
+    title: Latest orders
+    type: table
+    sql: |
+      SELECT id, created_at, region, amount, status
+      FROM orders
+      ORDER BY id DESC
+      LIMIT 10

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2330;--muted:#677084;--border:#e3e6ec;--bad:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--text:#e6e9ef;--muted:#8b93a5;--border:#262c38;--bad:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding:16px}
+h1{font-size:20px;margin:0}
+#updated{color:var(--muted);font-size:12px}
+#status{padding:0 16px;color:var(--bad)}
+#grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px;padding:0 16px 24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.badge{color:var(--bad);font-weight:500;font-size:12px}
+.chart{position:relative;height:260px}
+.stats{display:flex;flex-wrap:wrap;gap:24px}
+.stat .v{font-size:28px;font-weight:600}
+.stat .l{color:var(--muted);font-size:12px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.empty{color:var(--muted)}
+</style>
+</head>
+<body>
+<header><h1 id="title">Dashboard</h1><span id="updated"></span></header>
+<div id="status"></div>
+<main id="grid"></main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const PALETTE = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#dc2626', '#0891b2'];
+const $ = id => document.getElementById(id);
+let charts = [], lastGenerated = null, timer = null;
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmtVal = v => typeof v === 'number'
+  ? v.toLocaleString(undefined, {maximumFractionDigits: 2})
+  : (v === null || v === undefined ? '—' : String(v));
+const fmtTs = iso => new Date(iso).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;   // always use textContent for DB data
+  return e;
+}
+
+function renderStat(body, m) {
+  const row = m.rows[0];
+  if (!row) { body.append(el('div', 'empty', 'no data')); return; }
+  body.className = 'stats';
+  m.columns.forEach((c, i) => {
+    const s = el('div', 'stat');
+    s.append(el('div', 'v', fmtVal(row[i])), el('div', 'l', c));
+    body.append(s);
+  });
+}
+
+function renderTable(body, m) {
+  if (!m.rows.length) { body.append(el('div', 'empty', 'no data')); return; }
+  body.className = 'tablewrap';
+  const t = el('table');
+  const thead = el('thead'), hr = el('tr');
+  m.columns.forEach(c => hr.append(el('th', null, c)));
+  thead.append(hr); t.append(thead);
+  const tb = el('tbody');
+  m.rows.forEach(r => {
+    const tr = el('tr');
+    r.forEach(v => tr.append(el('td', null, fmtVal(v))));
+    tb.append(tr);
+  });
+  t.append(tb); body.append(t);
+}
+
+function renderChart(body, m) {
+  if (typeof Chart === 'undefined') {
+    body.append(el('div', 'empty', 'Chart.js failed to load (CDN may be blocked)'));
+    return;
+  }
+  const useHistory = m.type === 'line' && m.history && m.history.length;
+  if (!useHistory && !m.rows.length) { body.append(el('div', 'empty', 'no data')); return; }
+
+  let labels, series;
+  if (useHistory) {
+    labels = m.history.map(h => fmtTs(h.ts));
+    series = m.columns.map(c => ({label: c, data: m.history.map(h => h.values[c])}));
+  } else {
+    labels = m.rows.map(r => String(r[0]));
+    series = m.columns.slice(1).map((c, i) => ({label: c, data: m.rows.map(r => r[i + 1])}));
+  }
+
+  Chart.defaults.color = css('--muted');
+  Chart.defaults.borderColor = css('--border');
+  body.className = 'chart';
+  const canvas = el('canvas');
+  body.append(canvas);
+  const kind = m.type === 'bar' ? 'bar' : 'line';
+  charts.push(new Chart(canvas, {
+    type: kind,
+    data: {
+      labels,
+      datasets: series.map((s, i) => ({
+        ...s,
+        borderColor: PALETTE[i % PALETTE.length],
+        backgroundColor: PALETTE[i % PALETTE.length] + (kind === 'bar' ? '' : '33'),
+        tension: 0.25,
+        borderWidth: 2,
+        pointRadius: labels.length > 60 ? 0 : 3
+      }))
+    },
+    options: {
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {legend: {display: series.length > 1}},
+      scales: {y: {beginAtZero: kind === 'bar'}}
+    }
+  }));
+}
+
+function render(d) {
+  document.title = d.title;
+  $('title').textContent = d.title;
+  $('updated').textContent = 'Updated: ' + fmtTs(d.generated_at);
+  charts.forEach(c => c.destroy());
+  charts = [];
+  const grid = $('grid');
+  grid.replaceChildren();
+  for (const m of d.metrics) {
+    const card = el('section', 'card' + (m.wide ? ' wide' : ''));
+    const h = el('h2');
+    h.append(el('span', null, m.title));
+    if (m.error) h.append(el('span', 'badge', '⚠ ' + m.error));
+    card.append(h);
+    const body = el('div');
+    card.append(body);
+    grid.append(card);
+    if (m.type === 'stat') renderStat(body, m);
+    else if (m.type === 'table') renderTable(body, m);
+    else renderChart(body, m);
+  }
+}
+
+function schedule(sec) {
+  clearTimeout(timer);
+  timer = setTimeout(tick, (sec || 60) * 1000);
+}
+
+async function tick() {
+  try {
+    const r = await fetch('data/dashboard.json', {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    $('status').textContent = '';
+    if (d.generated_at !== lastGenerated) {
+      lastGenerated = d.generated_at;
+      render(d);
+    }
+    schedule(d.refresh_seconds);
+  } catch (e) {
+    $('status').textContent = 'Failed to load dashboard.json: ' + e.message;
+    schedule(60);
+  }
+}
+tick();
+</script>
+</body>
+</html>

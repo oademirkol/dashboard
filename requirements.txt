@@ -1,0 +1,4 @@
+pyyaml>=6
+# Enable one, depending on the company DB:
+# psycopg2-binary>=2.9   # postgres
+# pyodbc>=5              # mssql (the ODBC driver must also be installed on the runner)
