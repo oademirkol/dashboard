@@ -1,0 +1,175 @@
+{
+ "title": "PoC Dashboard",
+ "generated_at": "2026-11-08T18:34:44+00:00",
+ "refresh_seconds": 60,
+ "metrics": [
+  {
+   "name": "totals",
+   "title": "Last 24 hours",
+   "type": "stat",
+   "mode": "snapshot",
+   "wide": false,
+   "columns": [
+    "orders",
+    "revenue",
+    "avg_order"
+   ],
+   "rows": [
+    [
+     149,
+     19886.71,
+     133.47
+    ]
+   ],
+   "updated": "2026-11-08T18:34:44+00:00",
+   "error": null
+  },
+  {
+   "name": "orders_trend",
+   "title": "Orders in the last hour (poll history)",
+   "type": "line",
+   "mode": "append",
+   "wide": true,
+   "columns": [
+    "orders_1h",
+    "avg_amount"
+   ],
+   "rows": [
+    [
+     5,
+     156.28
+    ]
+   ],
+   "updated": "2026-11-08T18:34:44+00:00",
+   "error": null,
+   "history": [
+    {
+     "ts": "2026-11-08T18:34:44+00:00",
+     "values": {
+      "orders_1h": 5,
+      "avg_amount": 156.28
+     }
+    }
+   ]
+  },
+  {
+   "name": "revenue_by_region",
+   "title": "Revenue by region (7 days)",
+   "type": "bar",
+   "mode": "snapshot",
+   "wide": false,
+   "columns": [
+    "region",
+    "revenue"
+   ],
+   "rows": [
+    [
+     "LATAM",
+     14642.29
+    ],
+    [
+     "EU",
+     12637.43
+    ],
+    [
+     "APAC",
+     12442.02
+    ],
+    [
+     "US",
+     11694.57
+    ]
+   ],
+   "updated": "2026-11-08T18:34:44+00:00",
+   "error": null
+  },
+  {
+   "name": "latest_orders",
+   "title": "Latest orders",
+   "type": "table",
+   "mode": "snapshot",
+   "wide": false,
+   "columns": [
+    "id",
+    "created_at",
+    "region",
+    "amount",
+    "status"
+   ],
+   "rows": [
+    [
+     400,
+     "2026-11-08 18:23:36",
+     "LATAM",
+     178.03,
+     "refunded"
+    ],
+    [
+     399,
+     "2026-11-08 18:22:43",
+     "APAC",
+     168.59,
+     "paid"
+    ],
+    [
+     398,
+     "2026-11-08 17:56:47",
+     "US",
+     49.89,
+     "paid"
+    ],
+    [
+     397,
+     "2026-11-08 17:38:58",
+     "EU",
+     155.95,
+     "pending"
+    ],
+    [
+     396,
+     "2026-11-08 17:37:35",
+     "APAC",
+     228.96,
+     "pending"
+    ],
+    [
+     395,
+     "2026-11-08 17:33:04",
+     "APAC",
+     126.9,
+     "paid"
+    ],
+    [
+     394,
+     "2026-11-08 17:32:18",
+     "LATAM",
+     186.81,
+     "paid"
+    ],
+    [
+     393,
+     "2026-11-08 17:18:09",
+     "EU",
+     34.1,
+     "paid"
+    ],
+    [
+     392,
+     "2026-11-08 17:11:46",
+     "EU",
+     194.35,
+     "paid"
+    ],
+    [
+     391,
+     "2026-11-08 17:04:12",
+     "LATAM",
+     206.6,
+     "paid"
+    ]
+   ],
+   "updated": "2026-11-08T18:34:44+00:00",
+   "error": null
+  }
+ ]
+}
