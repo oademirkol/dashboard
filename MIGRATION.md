@@ -63,6 +63,7 @@ python -m http.server -d docs 8000
 4. Set `RUNNER_LABEL=self-hosted` (or the company label); verify network access from the runner to the DB.
 5. Translate the example SQL to your own schema and SQL dialect (`datetime('now', ...)` is sqlite-specific; postgres: `NOW() - INTERVAL '1 hour'`, mssql: `DATEADD(hour, -1, GETDATE())`).
 6. The read-only guarantee depends on the driver: postgres uses `readonly=True` in code; mssql is not enforced in code → add `ApplicationIntent=ReadOnly` to the DSN and restrict the DB user to `db_datareader`; for Oracle, add a new block to `connect()` (and use a read-only user).
+7. `scripts/smoke_test.py` runs against the repo's `config.yml` with a sqlite demo DB. When `config.yml` switches to postgres/mssql, point the tests at a dedicated sqlite test config (or drop the workflow step), otherwise CI fails.
 - Acceptance: workflow is green, the dashboard shows real data, all `error` fields are `null`.
 
 ### Phase 4 — Hardening
