@@ -9,7 +9,8 @@ separate card, the customer who placed it. Done to learn the drill-down pattern 
 config-driven architecture (no server).
 
 ## Decisions (agreed with the user)
-- Click origin: the `Latest orders` table only (not the trend chart).
+- Click origins (revised): both (a) a point on the `orders_trend` chart → list of orders at that poll → order detail,
+  and (b) a row in the `Latest orders` table → order detail. Both end at the same generic order detail page.
 - Approach A: per-record JSON files + one generic `docs/detail.html`.
 - Stay on the demo SQLite DB; add a `customers` table with fake data.
 - Feature is opt-in per metric via config; metrics without `detail` behave exactly as before.
@@ -41,6 +42,21 @@ detail:
 `?` is replaced by the key value; `poll.py` rewrites it to `%s` for postgres. Every `?` in a section
 SQL receives the same key (parameters are passed positionally, one per `?`).
 
+Optional `detail.list` block on a `line` (append) metric — one list per history point:
+```yaml
+- name: orders_trend
+  detail:
+    list:
+      title: "Orders in the hour ending {ts}"   # {ts} = the point's ISO timestamp
+      sql: SELECT id, created_at, region, amount, status FROM orders
+           WHERE created_at >= datetime('now', '-1 hour') ORDER BY id DESC
+      max_rows: 50
+      link: {metric: latest_orders, key: id}    # rows link to that metric's detail pages via this column
+```
+The list SQL runs at poll time (it describes "now"); it cannot be reconstructed later on a static site.
+Point key: `ts_key(ts) = re.sub(r"[^0-9T]", "", ts[:19]) + "Z"` (e.g. `2026-11-08T18:50:00+00:00` → `20261108T185000Z`);
+the same function is implemented in JavaScript.
+
 ## `poll.py` behaviour
 1. Run the metric query as today.
 2. If the metric has `detail`: for each row, take `row[key]`, validate it against `^[A-Za-z0-9_-]+$`
@@ -57,11 +73,29 @@ SQL receives the same key (parameters are passed positionally, one per `?`).
    `::warning::`); other sections and metrics continue. The metric's main result is unaffected.
 6. Add `"detail": {"key": "<column>"}` to the metric entry in `dashboard.json` so the UI knows it is clickable.
 
-`dashboard.json` contract change: optional `detail: {key}` on a metric. Nothing else changes.
+List files (`docs/data/details/<metric>/<ts_key>.json`) for `detail.list` metrics:
+```json
+{"metric": "orders_trend", "key": "20261108T185000Z", "title": "Orders in the hour ending ...",
+ "list": {"columns": ["id"], "rows": [[1]], "link": {"metric": "latest_orders", "key": "id"}, "error": null}}
+```
+- One list file per point currently in the retained `history`; files of trimmed points are deleted. A failing list
+  SQL sets only `list.error` (generic message) and `rows: []`.
+- Detail keys for the link target metric are the union of its own rows and the keys in all retained list files,
+  so every link in a list resolves. Therefore detail work runs after all metric queries have finished.
+- Detail cleanup keeps the whole union and deletes the rest.
+
+`dashboard.json` contract change: optional `detail` on a metric — `{key}` for table metrics, `{list: true}` for
+line metrics with `detail.list`. Nothing else changes.
 
 ## UI
 - `index.html`: for `table` metrics with `detail`, render the key cell as a link to
   `detail.html?metric=<name>&key=<value>` (link built with `encodeURIComponent`; pointer cursor / hover on the row).
+- `index.html` chart click: for `line` metrics with `detail.list`, clicking a data point (Chart.js
+  `getElementsAtEventForMode(e, 'nearest', {intersect: true})`) navigates to
+  `detail.html?metric=orders_trend&key=<ts_key(history[index].ts)>`; the pointer cursor shows while hovering a point.
+  Points are enlarged (`pointRadius` ≥ 3, `hitRadius` ≥ 8) so they are easy to hit even with many points.
+- `detail.html` also renders list files: a table whose `link.key` column cells link to
+  `detail.html?metric=<link.metric>&key=<value>`; empty rows show "No orders at this point"; `list.error` shows a badge.
 - New `docs/detail.html`: same theme tokens and layout as `index.html`; validates `metric` and `key` against
   the same regex, fetches `data/details/<metric>/<key>.json` (`cache: 'no-store'`), renders each section as a
   key/value card, shows a back link to `index.html`. On 404 shows "This record is no longer available
@@ -85,13 +119,19 @@ SQL receives the same key (parameters are passed positionally, one per `?`).
 - Second poll with no new data leaves detail files byte-identical.
 - After `demo_db.py --tick 5` + poll, files for keys that left the table are removed.
 - A key containing `../` is rejected and writes nothing.
+- A list file exists for each history point, every id in a list has an order detail file, list files follow history
+  trimming (`max_points`), and an empty list yields `rows: []` without crashing.
 Then a manual browser check with `python -m http.server -d docs 8000`: click a row, see both cards, back link works,
 a bogus `key` shows the not-available message.
 
 ## Out of scope
-Trend-point click-through, pagination, search, charts inside detail pages, details for more than the rows
-the metric returns.
+Pagination, search, charts inside detail pages, clicking bars of the revenue chart, lists for older history
+that predates this feature.
 
 ## Known trade-offs
-- Only rows currently in the table have detail pages; links to older orders break (handled with the message above).
+- Only orders in the table or in a retained list have detail pages; links to older orders break (handled with the
+  message above).
+- Files grow with `max_points` (one list file per point, at most `max_rows` ids each). Keep `max_points` modest
+  for metrics with lists; each file only changes when it is created or trimmed.
+- History points created before this feature have no list file; clicking them shows the not-available message.
 - `detail.html` duplicates some CSS from `index.html`.
