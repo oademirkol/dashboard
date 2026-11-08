@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "405",
+ "title": "Order 405",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    405,
+    "2026-11-08 19:22:59",
+    "paid",
+    "APAC",
+    92.64
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Quinn Tanaka",
+    "quinn.tanaka@example.com",
+    "India",
+    "Consumer"
+   ],
+   "error": null
+  }
+ ]
+}

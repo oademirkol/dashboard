@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#1c2330;--muted:#677084;--border:#e3e6ec;--bad:#c0392b}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--text:#e6e9ef;--muted:#8b93a5;--border:#262c38;--bad:#f87171}}
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2330;--muted:#677084;--border:#e3e6ec;--bad:#c0392b;--link:#2563eb;--hover:#eef2f9}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--text:#e6e9ef;--muted:#8b93a5;--border:#262c38;--bad:#f87171;--link:#60a5fa;--hover:#202636}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;padding:16px}
@@ -27,6 +27,9 @@ table{border-collapse:collapse;width:100%}
 th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 th{color:var(--muted);font-weight:600;font-size:12px}
 .empty{color:var(--muted)}
+a{color:var(--link)}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--hover)}
 </style>
 </head>
 <body>
@@ -44,6 +47,11 @@ const fmtVal = v => typeof v === 'number'
   ? v.toLocaleString(undefined, {maximumFractionDigits: 2})
   : (v === null || v === undefined ? '—' : String(v));
 const fmtTs = iso => new Date(iso).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+
+// Must match poll.py ts_key(): 2026-11-08T18:50:00+00:00 -> 20261108T185000Z
+const tsKey = iso => iso.slice(0, 19).replace(/[^0-9T]/g, '') + 'Z';
+const detailUrl = (metric, key) =>
+  'detail.html?metric=' + encodeURIComponent(metric) + '&key=' + encodeURIComponent(String(key));
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -71,9 +79,26 @@ function renderTable(body, m) {
   m.columns.forEach(c => hr.append(el('th', null, c)));
   thead.append(hr); t.append(thead);
   const tb = el('tbody');
+  const keyIdx = m.detail && m.detail.key ? m.columns.indexOf(m.detail.key) : -1;
   m.rows.forEach(r => {
     const tr = el('tr');
-    r.forEach(v => tr.append(el('td', null, fmtVal(v))));
+    const key = keyIdx >= 0 ? r[keyIdx] : null;
+    const href = key !== null && key !== undefined ? detailUrl(m.name, key) : null;
+    r.forEach((v, i) => {
+      const td = el('td');
+      if (i === keyIdx && href) {
+        const a = el('a', null, String(v));
+        a.href = href;
+        td.append(a);
+      } else {
+        td.textContent = fmtVal(v);
+      }
+      tr.append(td);
+    });
+    if (href) {
+      tr.className = 'clickable';
+      tr.addEventListener('click', e => { if (e.target.tagName !== 'A') location.href = href; });
+    }
     tb.append(tr);
   });
   t.append(tb); body.append(t);
@@ -102,6 +127,8 @@ function renderChart(body, m) {
   const canvas = el('canvas');
   body.append(canvas);
   const kind = m.type === 'bar' ? 'bar' : 'line';
+  // Line metrics with detail.list: clicking a history point opens the list of records at that poll.
+  const clickable = Boolean(useHistory && m.detail && m.detail.list);
   charts.push(new Chart(canvas, {
     type: kind,
     data: {
@@ -112,10 +139,18 @@ function renderChart(body, m) {
         backgroundColor: PALETTE[i % PALETTE.length] + (kind === 'bar' ? '' : '33'),
         tension: 0.25,
         borderWidth: 2,
-        pointRadius: labels.length > 60 ? 0 : 3
+        pointRadius: clickable || labels.length <= 60 ? 3 : 0,
+        hitRadius: clickable ? 8 : 1
       }))
     },
     options: {
+      onClick: clickable ? (evt, _, chart) => {
+        const hit = chart.getElementsAtEventForMode(evt, 'nearest', {intersect: true}, true);
+        if (hit.length) location.href = detailUrl(m.name, tsKey(m.history[hit[0].index].ts));
+      } : undefined,
+      onHover: clickable ? (evt, els) => {
+        evt.native.target.style.cursor = els.length ? 'pointer' : 'default';
+      } : undefined,
       maintainAspectRatio: false,
       animation: false,
       plugins: {legend: {display: series.length > 1}},

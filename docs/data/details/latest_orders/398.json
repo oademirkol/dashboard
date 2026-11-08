@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "398",
+ "title": "Order 398",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    398,
+    "2026-11-08 18:25:18",
+    "paid",
+    "EU",
+    12.72
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Quinn Smith",
+    "quinn.smith@example.com",
+    "Brazil",
+    "Enterprise"
+   ],
+   "error": null
+  }
+ ]
+}

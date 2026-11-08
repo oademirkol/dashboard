@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detail</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2330;--muted:#677084;--border:#e3e6ec;--bad:#c0392b;--link:#2563eb;--hover:#eef2f9}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c25;--text:#e6e9ef;--muted:#8b93a5;--border:#262c38;--bad:#f87171;--link:#60a5fa;--hover:#202636}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 16px 4px}
+h1{font-size:20px;margin:8px 0 0}
+nav{display:flex;gap:16px;flex-wrap:wrap}
+a{color:var(--link)}
+#message{padding:8px 16px;color:var(--muted)}
+#grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px;padding:12px 16px 24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.badge{color:var(--bad);font-weight:500;font-size:12px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
+dt{color:var(--muted)}
+dd{margin:0;overflow-wrap:anywhere}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12px}
+.empty{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<nav><a href="index.html">&larr; Back to dashboard</a><a href="#" id="back" hidden>&larr; Back</a></nav>
+<h1 id="title">Detail</h1>
+</header>
+<div id="message"></div>
+<main id="grid"></main>
+<script>
+const $ = id => document.getElementById(id);
+const SAFE = /^[A-Za-z0-9_-]+$/;
+const fmtVal = v => typeof v === 'number'
+  ? v.toLocaleString(undefined, {maximumFractionDigits: 2})
+  : (v === null || v === undefined ? '—' : String(v));
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;   // always use textContent for DB data
+  return e;
+}
+
+function card(title, error, wide) {
+  const c = el('section', 'card' + (wide ? ' wide' : ''));
+  const h = el('h2');
+  h.append(el('span', null, title));
+  if (error) h.append(el('span', 'badge', '⚠ ' + error));
+  c.append(h);
+  $('grid').append(c);
+  return c;
+}
+
+function renderSection(s) {
+  const c = card(s.title, s.error, false);
+  if (!s.row) { c.append(el('div', 'empty', 'No data')); return; }
+  const dl = el('dl');
+  s.columns.forEach((col, i) => dl.append(el('dt', null, col), el('dd', null, fmtVal(s.row[i]))));
+  c.append(dl);
+}
+
+function renderList(list, title) {
+  const c = card(title, list.error, true);
+  if (!list.rows.length) { c.append(el('div', 'empty', 'No orders at this point')); return; }
+  const keyIdx = list.columns.indexOf(list.link.key);
+  const wrap = el('div', 'tablewrap');
+  const t = el('table');
+  const hr = el('tr');
+  list.columns.forEach(col => hr.append(el('th', null, col)));
+  const thead = el('thead');
+  thead.append(hr);
+  t.append(thead);
+  const tb = el('tbody');
+  list.rows.forEach(r => {
+    const tr = el('tr');
+    r.forEach((v, i) => {
+      const td = el('td');
+      if (i === keyIdx && v !== null && v !== undefined) {
+        const a = el('a', null, String(v));
+        a.href = 'detail.html?metric=' + encodeURIComponent(list.link.metric) + '&key=' + encodeURIComponent(String(v));
+        td.append(a);
+      } else {
+        td.textContent = fmtVal(v);
+      }
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  t.append(tb);
+  wrap.append(t);
+  c.append(wrap);
+}
+
+async function main() {
+  const q = new URLSearchParams(location.search);
+  const metric = q.get('metric'), key = q.get('key');
+  // "Back" to the previous detail page (e.g. from an order back to the list it was opened from).
+  try {
+    const ref = new URL(document.referrer);
+    if (ref.origin === location.origin && ref.pathname.endsWith('detail.html')) {
+      $('back').hidden = false;
+      $('back').addEventListener('click', e => { e.preventDefault(); history.back(); });
+    }
+  } catch (e) { /* no referrer */ }
+
+  if (!metric || !key || !SAFE.test(metric) || !SAFE.test(key)) {
+    $('message').textContent = 'Invalid link.';
+    return;
+  }
+  try {
+    const r = await fetch('data/details/' + metric + '/' + key + '.json', {cache: 'no-store'});
+    if (r.status === 404) {
+      $('message').textContent = 'This record is no longer available (it may have dropped out of the table).';
+      return;
+    }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    document.title = d.title;
+    $('title').textContent = d.title;
+    if (d.sections) d.sections.forEach(renderSection);
+    if (d.list) renderList(d.list, d.title);
+  } catch (e) {
+    $('message').textContent = 'Failed to load the record: ' + e.message;
+  }
+}
+main();
+</script>
+</body>
+</html>
