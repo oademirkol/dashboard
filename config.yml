@@ -17,6 +17,7 @@ database:
 #   max_points  number of points kept in the append history (default 500)
 #   max_rows    maximum rows fetched from the query (default 500)
 #   wide        if true the card spans the full width
+#   detail      optional drill-down, see the latest_orders and orders_trend examples below
 metrics:
   - name: totals
     title: Last 24 hours
@@ -31,13 +32,24 @@ metrics:
   - name: orders_trend
     title: Orders in the last hour (poll history)
     type: line
-    max_points: 300
+    max_points: 100
     wide: true
     sql: |
       SELECT COUNT(*) AS orders_1h,
              ROUND(AVG(amount), 2) AS avg_amount
       FROM orders
       WHERE created_at >= datetime('now', '-1 hour')
+    # Click a point on the chart to open the list of orders at that poll.
+    detail:
+      list:
+        title: "Orders in the hour ending {ts}"
+        max_rows: 50
+        link: {metric: latest_orders, key: id}   # rows link to that metric's detail pages
+        sql: |
+          SELECT id, created_at, region, amount, status
+          FROM orders
+          WHERE created_at >= datetime('now', '-1 hour')
+          ORDER BY id DESC
 
   - name: revenue_by_region
     title: Revenue by region (7 days)
@@ -57,3 +69,17 @@ metrics:
       FROM orders
       ORDER BY id DESC
       LIMIT 10
+    # Click an order id to open its detail page. `?` in the section SQL is replaced by the key value.
+    detail:
+      key: id
+      title: "Order {id}"
+      sections:
+        - title: Order
+          sql: |
+            SELECT id, created_at, status, region, amount
+            FROM orders WHERE id = ?
+        - title: Customer
+          sql: |
+            SELECT c.name, c.email, c.country, c.segment
+            FROM customers c JOIN orders o ON o.customer_id = c.id
+            WHERE o.id = ?
