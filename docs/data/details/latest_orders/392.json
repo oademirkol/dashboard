@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "392",
+ "title": "Order 392",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    392,
+    "2026-11-08 18:29:51",
+    "refunded",
+    "US",
+    96.78
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Alex Chen",
+    "alex.chen@example.com",
+    "Japan",
+    "SMB"
+   ],
+   "error": null
+  }
+ ]
+}

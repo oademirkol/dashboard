@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "400",
+ "title": "Order 400",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    400,
+    "2026-11-08 19:42:36",
+    "refunded",
+    "EU",
+    246.26
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Avery Garcia",
+    "avery.garcia@example.com",
+    "USA",
+    "Enterprise"
+   ],
+   "error": null
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "396",
+ "title": "Order 396",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    396,
+    "2026-11-08 19:01:41",
+    "paid",
+    "EU",
+    136.55
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Jordan Chen",
+    "jordan.chen@example.com",
+    "Japan",
+    "Enterprise"
+   ],
+   "error": null
+  }
+ ]
+}

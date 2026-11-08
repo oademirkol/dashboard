@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "391",
+ "title": "Order 391",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    391,
+    "2026-11-08 18:22:49",
+    "paid",
+    "APAC",
+    15.78
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Riley Smith",
+    "riley.smith@example.com",
+    "Mexico",
+    "Enterprise"
+   ],
+   "error": null
+  }
+ ]
+}

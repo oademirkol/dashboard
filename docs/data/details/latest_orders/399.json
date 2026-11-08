@@ -1,0 +1,41 @@
+{
+ "metric": "latest_orders",
+ "key": "399",
+ "title": "Order 399",
+ "sections": [
+  {
+   "title": "Order",
+   "columns": [
+    "id",
+    "created_at",
+    "status",
+    "region",
+    "amount"
+   ],
+   "row": [
+    399,
+    "2026-11-08 19:23:34",
+    "paid",
+    "EU",
+    23.39
+   ],
+   "error": null
+  },
+  {
+   "title": "Customer",
+   "columns": [
+    "name",
+    "email",
+    "country",
+    "segment"
+   ],
+   "row": [
+    "Riley Chen",
+    "riley.chen@example.com",
+    "USA",
+    "Consumer"
+   ],
+   "error": null
+  }
+ ]
+}
